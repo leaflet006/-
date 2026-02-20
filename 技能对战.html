@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>技能对战 · 手动输入技能版</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        body {
+            background: linear-gradient(145deg, #1a2f3f 0%, #0f1e27 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 16px;
+        }
+        .game-container {
+            max-width: 1400px;
+            width: 100%;
+            background: rgba(20, 35, 45, 0.9);
+            backdrop-filter: blur(8px);
+            border-radius: 48px;
+            padding: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+            border: 1px solid #d4a373;
+        }
+        .setup-panel {
+            background: #1e2c3a;
+            border-radius: 40px;
+            padding: 30px;
+            color: #f0e6d2;
+            border: 2px solid #b58b5b;
+        }
+        .setup-title {
+            font-size: 3rem;
+            text-align: center;
+            margin: 0 0 30px;
+            text-shadow: 4px 4px 0 #00000060;
+            color: #ffd966;
+        }
+        .setup-row {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+        .setup-card {
+            background: #253745;
+            border-radius: 32px;
+            padding: 25px;
+            flex: 1 1 400px;
+            border: 2px solid #c9a87c;
+        }
+        .setup-card h2 {
+            font-size: 2rem;
+            margin-top: 0;
+            color: #ffd966;
+            border-bottom: 2px solid #ac8e68;
+            padding-bottom: 10px;
+        }
+        .setup-input {
+            width: 100%;
+            padding: 15px 20px;
+            font-size: 1.2rem;
+            background: #2e4355;
+            border: 2px solid #b48b4b;
+            color: #f0e6d2;
+            border-radius: 60px;
+            margin: 10px 0;
+        }
+        .setup-input:focus {
+            outline: none;
+            border-color: #ffb347;
+            box-shadow: 0 0 15px #ffb347;
+        }
+        .skill-hint {
+            background: #1b2a36;
+            padding: 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #7c6a4f;
+        }
+        .skill-hint table {
+            width: 100%;
+            color: #e0d3b0;
+            border-collapse: collapse;
+        }
+        .skill-hint td {
+            padding: 4px 8px;
+            border-bottom: 1px solid #4a5e6b;
+        }
+        .skill-hint td:first-child {
+            color: #ffb347;
+            font-weight: bold;
+            width: 40px;
+        }
+        .start-btn {
+            background: #d9b382;
+            border: none;
+            color: #1e2b32;
+            font-weight: 800;
+            font-size: 2rem;
+            padding: 20px 60px;
+            border-radius: 60px;
+            cursor: pointer;
+            border-bottom: 6px solid #8b631c;
+            transition: 0.05s linear;
+            display: block;
+            margin: 20px auto 0;
+            box-shadow: 0 5px 15px #00000055;
+        }
+        .start-btn:active {
+            border-bottom-width: 2px;
+            transform: translateY(4px);
+        }
+        .battle-panel {
+            display: none;
+        }
+        .turn-indicator {
+            background: #4d3e2e;
+            color: #ffddaa;
+            font-size: 1.6rem;
+            font-weight: bold;
+            padding: 16px 32px;
+            border-radius: 60px;
+            display: inline-block;
+            margin-bottom: 20px;
+            border: 3px solid #f6c15b;
+            box-shadow: 0 6px 0 #7a5610;
+        }
+        .battlefield {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .player-card {
+            flex: 1 1 400px;
+            background: #1e2c3a;
+            border-radius: 32px;
+            padding: 24px;
+            border: 2px solid #d4a373;
+            box-shadow: 0 8px 0 #8b5a2b;
+            color: #f0e6d2;
+            transition: all 0.1s ease;
+        }
+        .player-card.current-turn {
+            border-color: #ffd966;
+            box-shadow: 0 0 20px #ffb347, 0 8px 0 #b4652c;
+            transform: scale(1.02);
+        }
+        .player-name {
+            font-size: 2.2rem;
+            font-weight: 800;
+            text-shadow: 3px 3px 0 #00000055;
+            margin-bottom: 8px;
+        }
+        .hp-bar-bg {
+            background: #3d2b1a;
+            height: 28px;
+            border-radius: 30px;
+            border: 2px solid #aa7c4f;
+            overflow: hidden;
+            margin: 16px 0 12px;
+        }
+        .hp-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #bc3f2c, #e06b4f);
+            border-radius: 30px;
+            transition: width 0.2s;
+            box-shadow: inset 0 2px 5px #ffbb99;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px 20px;
+            background: #1b2a36;
+            padding: 20px;
+            border-radius: 24px;
+            margin: 16px 0;
+            border: 1px solid #7c6a4f;
+        }
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.2rem;
+            font-weight: 600;
+            background: #253745;
+            padding: 8px 16px;
+            border-radius: 40px;
+            border-bottom: 3px solid #ac8e68;
+        }
+        .skill-tag {
+            display: inline-block;
+            background: #384e6b;
+            color: #faeac9;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin: 4px 6px 4px 0;
+            border: 1px solid #c9a87c;
+            box-shadow: 0 2px 0 #624c38;
+        }
+        .log-panel {
+            background: #0d1b24;
+            border-radius: 28px;
+            padding: 20px;
+            margin-top: 30px;
+            border: 1px solid #bb8f5a;
+            max-height: 200px;
+            overflow-y: auto;
+            color: #bcd5e0;
+            box-shadow: inset 0 0 15px #00000077;
+        }
+        .log-entry {
+            padding: 4px 0;
+            border-bottom: 1px solid #3d4f5e;
+            font-size: 1rem;
+            font-family: 'Consolas', monospace;
+        }
+        .action-btn {
+            background: #d9b382;
+            border: none;
+            color: #1e2b32;
+            font-weight: 800;
+            font-size: 1.2rem;
+            padding: 12px 30px;
+            border-radius: 60px;
+            cursor: pointer;
+            border-bottom: 4px solid #8b631c;
+            transition: 0.05s linear;
+            margin: 0 10px;
+        }
+        .action-btn:active {
+            border-bottom-width: 2px;
+            transform: translateY(2px);
+        }
+        .action-btn:disabled {
+            opacity: 0.4;
+            border-bottom-width: 2px;
+            transform: translateY(2px);
+            pointer-events: none;
+        }
+        .flex-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 20px;
+            justify-content: space-between;
+        }
+    </style>
+</head>
+<body>
+<div class="game-container">
+    <!-- ========== 设置界面 ========== -->
+    <div id="setupPanel" class="setup-panel">
+        <h1 class="setup-title">⚔️ 技能对战 · 手动配将 ⚔️</h1>
+        
+        <!-- 技能表 -->
+        <div class="skill-hint">
+            <table>
+                <tr><th colspan="2" style="text-align: left; color: #ffd966;">📖 技能ID表 (输入ID，空格分隔)</th></tr>
+                <tr><td>1</td><td>普攻</td><td>11</td><td>重整旗鼓</td></tr>
+                <tr><td>2</td><td>反击</td><td>12</td><td>不屈</td></tr>
+                <tr><td>3</td><td>乘胜追击</td><td>13</td><td>巧变</td></tr>
+                <tr><td>4</td><td>铁骑横冲</td><td>14</td><td>四面楚歌</td></tr>
+                <tr><td>5</td><td>草船借箭</td><td>15</td><td>趁火打劫</td></tr>
+                <tr><td>6</td><td>五雷轰顶</td><td>16</td><td>狼袭</td></tr>
+                <tr><td>7</td><td>避其锐气</td><td>17</td><td>破釜沉舟</td></tr>
+                <tr><td>8</td><td>以战养战</td><td>18</td><td>肃军</td></tr>
+                <tr><td>9</td><td>文武双全</td><td>19</td><td>奇袭</td></tr>
+                <tr><td>10</td><td>破甲</td><td>20</td><td>掠夺</td></tr>
+                <tr><td></td><td></td><td>21</td><td>愈战愈勇</td></tr>
+            </table>
+        </div>
+
+        <div class="setup-row">
+            <!-- 玩家1 -->
+            <div class="setup-card">
+                <h2>👑 玩家 1</h2>
+                <input type="text" id="p1Name" class="setup-input" placeholder="名字" value="关羽">
+                <input type="text" id="p1Skills" class="setup-input" placeholder="技能ID (例如: 1 2 3 4 5 6 7)" value="1 2 3 4 5 6 7">
+            </div>
+            <!-- 玩家2 -->
+            <div class="setup-card">
+                <h2>⚔️ 玩家 2</h2>
+                <input type="text" id="p2Name" class="setup-input" placeholder="名字" value="吕布">
+                <input type="text" id="p2Skills" class="setup-input" placeholder="技能ID (例如: 8 9 10 11 12 13 14)" value="8 9 10 11 12 13 14">
+            </div>
+        </div>
+        <button class="start-btn" id="startGameBtn">▶ 开始对战</button>
+    </div>
+
+    <!-- ========== 战斗界面 ========== -->
+    <div id="battlePanel" class="battle-panel">
+        <div class="flex-row">
+            <span class="turn-indicator" id="turnDisplay">⚡ 回合 ⚡</span>
+            <div>
+                <button class="action-btn" id="nextTurnBtn">▶ 执行回合</button>
+                <button class="action-btn" id="resetBtn">🔄 重新配将</button>
+            </div>
+        </div>
+
+        <div class="battlefield">
+            <!-- 玩家0 -->
+            <div class="player-card" id="player0Card">
+                <div class="player-name" id="p0Name">关羽</div>
+                <div class="hp-bar-bg"><div class="hp-bar-fill" id="p0HpBar" style="width:100%"></div></div>
+                <div class="stats-grid">
+                    <div class="stat-item">❤️ 血量 <span id="p0Hp">15000</span></div>
+                    <div class="stat-item">🧠 智力 <span id="p0Zhi">10.0</span></div>
+                    <div class="stat-item">💪 武力 <span id="p0Wu">10.0</span></div>
+                    <div class="stat-item">⚡ 造成伤害 <span id="p0Shang">100</span>%</div>
+                    <div class="stat-item">🛡️ 受到伤害 <span id="p0Shou">100</span>%</div>
+                </div>
+                <div id="p0SkillsDiv"></div>
+            </div>
+            <!-- 玩家1 -->
+            <div class="player-card" id="player1Card">
+                <div class="player-name" id="p1NameSpan">吕布</div>
+                <div class="hp-bar-bg"><div class="hp-bar-fill" id="p1HpBar" style="width:100%"></div></div>
+                <div class="stats-grid">
+                    <div class="stat-item">❤️ 血量 <span id="p1Hp">15000</span></div>
+                    <div class="stat-item">🧠 智力 <span id="p1Zhi">10.0</span></div>
+                    <div class="stat-item">💪 武力 <span id="p1Wu">10.0</span></div>
+                    <div class="stat-item">⚡ 造成伤害 <span id="p1Shang">100</span>%</div>
+                    <div class="stat-item">🛡️ 受到伤害 <span id="p1Shou">100</span>%</div>
+                </div>
+                <div id="p1SkillsDiv"></div>
+            </div>
+        </div>
+        <div class="log-panel" id="logPanel">
+            <div class="log-entry">⚔️ 游戏开始！</div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    // ---------- 技能数据 ----------
+    const skillList = [
+        { id: 1, name: "普攻", dfn: 1, desc: "回合内，造成100%兵刃伤害" },
+        { id: 2, name: "反击", dfn: 0, desc: "受到伤害时反击，令敌方受到80%兵刃伤害(不发动技能)并增加其2%受到伤害" },
+        { id: 3, name: "乘胜追击", dfn: 4, desc: "造成伤害时，有75%概率造成80%兵刃伤害" },
+        { id: 4, name: "铁骑横冲", dfn: 2, desc: "回合开始时，有100%概率对敌方造成500%兵刃伤害，若如此做，下次发动时减少10%概率和50%伤害（概率最少30%）" },
+        { id: 5, name: "草船借箭", dfn: 0, desc: "受到伤害时，有50%概率对敌方造成140%智力伤害，并令自身受到伤害降低1%" },
+        { id: 6, name: "五雷轰顶", dfn: 1, desc: "回合内，使敌军受到0%谋略伤害，释放5次。每释放一次，伤害系数增加1%" },
+        { id: 7, name: "避其锐气", dfn: 2, desc: "前四回合每回合减少10%受到伤害，其余回合每回合增加5%受到伤害" },
+        { id: 8, name: "以战养战", dfn: 3, desc: "回合结束时增加1%兵力，5%智力/5%武力" },
+        { id: 9, name: "文武双全", dfn: 1, desc: "回合内，令敌方受到200%兵刃伤害和200%智力伤害" },
+        { id: 10, name: "破甲", dfn: 4, desc: "造成伤害时，令造成的伤害值增加20%，若如此做，我方的受到伤害值增加10%,若你的体力值小于敌方体力值，此技能失效，否则“令造成的伤害值增加20%”中的数值-1%（至多减少19%）" },
+        { id: 11, name: "重整旗鼓", dfn: 2, desc: "回合开始时，若你的体力值小于5000，你可以令你受到的伤害变为20%，若如此做，敌方造成的伤害变更为10%（一局游戏内只能发动一次）" },
+        { id: 12, name: "不屈", dfn: 6, desc: "任意一名玩家的回合结束时，若你的体力值小于或等于0，你可以将体力值回复至30000，若如此做，你造成的伤害减少99%（一局游戏内只能发动一次）" },
+        { id: 13, name: "巧变", dfn: 2, desc: "回合开始时，设你受到伤害为x，若x为正数：令x=-(x+10%)，若x为负数，则令x=-(x-10%)" },
+        { id: 14, name: "四面楚歌", dfn: 7, desc: "敌方的回合结束时，若你的兵力小于敌方的兵力，令敌方攻击伤害减少0%，每发动一次，系数增加11%,最多99%，每发动一次，自身受到伤害增加此系数" },
+        { id: 15, name: "趁火打劫", dfn: 3, desc: "回合结束时，若我方的兵力大于敌方的兵力，令敌方的受到伤害增加100%，但是你受到的伤害将增加敌方受到伤害的70%" },
+        { id: 16, name: "狼袭", dfn: 8, desc: "敌方的回合开始时，若我方兵力大于敌方兵力的两倍，我方执行一个额外回合，但是此回合没有开始和结束阶段，若如此做，我方受到的伤害值+200%" },
+        { id: 17, name: "破釜沉舟", dfn: 6, desc: "任意一名玩家的回合结束时，若我方的体力值小于敌方的体力值，可以令敌方的兵力减少我方的兵力，然后将我方的兵力调整至敌方兵力的2倍(每局游戏只能发动一次)" },
+        { id: 18, name: "肃军", dfn: 9, desc: "除此时刻外的任意时刻，令兵力增加100，武力和智力增加0.1" },
+        { id: 19, name: "奇袭", dfn: 1, desc: "回合内限三次，阳：令敌方+2%受到伤害；阴：令敌方受到120%兵刃伤害，每发动一次，切换阴阳状态（默认为阳）" },
+        { id: 20, name: "掠夺", dfn: 2, desc: "回合开始时，获得对方的随机一个技能，然后令对方获得这个技能(一局游戏内只能发动两次)" },
+        { id: 21, name: "愈战愈勇", dfn: 1, desc: "回合内，对敌方造成100%兵刃伤害，每发动一次，系数增加50%" },
+    ];
+
+    // ---------- 全局变量 ----------
+    let players = [
+        { hp: 15000, zhi: 10, wu: 10, shang: 1.0, shou: 1.0, name: "", ji: [], ttt: Array(20).fill(0) },
+        { hp: 15000, zhi: 10, wu: 10, shang: 1.0, shou: 1.0, name: "", ji: [], ttt: Array(20).fill(0) }
+    ];
+    let turn = 0;           // 当前行动玩家索引 (0或1)
+    let lun = 0;            // 回合计数
+    let gameOver = false;
+    let logEntries = ["⚔️ 游戏开始！"];
+
+    // ---------- 工具函数 ----------
+    function addLog(msg) {
+        logEntries.push(msg);
+        if (logEntries.length > 30) logEntries.shift();
+        const panel = document.getElementById('logPanel');
+        if (panel) {
+            panel.innerHTML = logEntries.map(t => `<div class="log-entry">${t}</div>`).join('');
+            panel.scrollTop = panel.scrollHeight;
+        }
+    }
+
+    function refreshUI() {
+        for (let i = 0; i < 2; i++) {
+            document.getElementById(`p${i}Name`).innerText = players[i].name;
+            document.getElementById(`p${i}Hp`).innerText = Math.max(0, Math.floor(players[i].hp * 10) / 10);
+            document.getElementById(`p${i}Zhi`).innerText = players[i].zhi.toFixed(2);
+            document.getElementById(`p${i}Wu`).innerText = players[i].wu.toFixed(2);
+            document.getElementById(`p${i}Shang`).innerText = Math.floor(players[i].shang * 100);
+            document.getElementById(`p${i}Shou`).innerText = Math.floor(players[i].shou * 100);
+            
+            const hpPercent = Math.min(100, Math.max(0, (players[i].hp / 15000) * 100));
+            document.getElementById(`p${i}HpBar`).style.width = hpPercent + '%';
+
+            let skillHtml = '';
+            players[i].ji.forEach(skill => {
+                skillHtml += `<span class="skill-tag">${skill.name}</span>`;
+            });
+            document.getElementById(`p${i}SkillsDiv`).innerHTML = skillHtml;
+        }
+        document.getElementById('player0Card').classList.toggle('current-turn', turn === 0);
+        document.getElementById('player1Card').classList.toggle('current-turn', turn === 1);
+        document.getElementById('turnDisplay').innerText = `⚡ ${players[turn].name}的回合 ⚡`;
+        document.getElementById('p1NameSpan').innerText = players[1].name;
+    }
+
+    // ---------- 伤害与技能 ----------
+    function shou(x, y, pre, lei, flag) {
+        if (gameOver) return;
+        let num = pre * players[x].shou * players[y].shang * (lei ? players[y].wu : players[y].zhi);
+        if (flag) {
+            fd(0, x, y, num, lei, pre);
+            fd(4, y, x, num, lei, pre);
+        }
+        addLog(`${players[x].name} 受到 ${num.toFixed(2)} 点 ${lei ? '兵刃' : '谋略'} 伤害.`);
+        players[x].hp -= num;
+        if (players[x].hp < 0) players[x].hp = 0;
+        fd(5, y, x, num, lei, pre);
+        refreshUI();
+    }
+
+    function pugong(x, y) { shou(y, x, 1, 1, 1); }
+    function fanji(x, y) { players[y].shou *= 1.02; addLog(`${players[y].name}受到伤害增加2%`); shou(y, x, 0.80, 1, 0); }
+    function chengshengzhuiji(x, y, num, lei) { if (Math.random() * 100 < 75) shou(y, x, 0.8, lei, 1); }
+    function tieqihengchong(x, y) { if (Math.random() * 100 < Math.max(100 - players[x].ttt[1], 30.0)) { shou(y, x, 4 - players[x].ttt[1]/20.0, 1, 1); players[x].ttt[1] += 10; } }
+    function caochuan(x, y) { if (Math.random() * 100 < 50) return; players[x].shou *= 0.99; addLog(`${players[x].name}受到伤害减少1%`); shou(y, x, 1.4, 0, 1); }
+    function wulei(x, y) { for (let i=0; i<5; i++) { shou(y, x, 0 + players[x].ttt[2], 0, 1); players[x].ttt[2] += 0.01; } }
+    function yangzhan(x, y) { players[x].hp *= 1.01; if (players[x].wu < players[x].zhi) players[x].wu *= 1.05; else players[x].zhi *= 1.05; }
+    function ruiqi(x, y) { if (lun < 4) { players[x].shou *= 0.9; addLog(`${players[x].name}受到伤害减少10%`); } else { players[x].shou *= 1.05; addLog(`${players[x].name}受到伤害增加5%`); } }
+    function wenwu(x, y) { shou(y, x, 2, 0, 1); shou(y, x, 2, 1, 1); }
+    function pojia(x, y) { if (players[x].ttt[7] === lun) return; if (players[x].hp < players[y].hp) { players[x].ttt[6] = 1; return; } players[x].shang *= 1.2 - players[x].ttt[8]/100.0; players[x].shou *= 1.1; players[x].ttt[7] = lun; players[x].ttt[8]++; if (players[x].ttt[8] > 19) players[x].ttt[8] = 19; addLog(`${players[x].name}造成的伤害值增加，受到的伤害值增加10%`); }
+    function chongzheng(x, y) { if (players[x].ttt[5]) return; players[x].ttt[5] = 1; players[x].shou = 0.2; players[y].shang = 0.1; addLog(`${players[x].name}触发重整旗鼓！`); }
+    function buqu(x, y) { if (players[x].ttt[3]) return; players[x].ttt[3] = 1; players[x].hp = 30000; players[x].shang *= 0.01; addLog(`${players[x].name}触发不屈！兵力回复至30000`); }
+    function qiaobian(x, y) { players[x].shou = -(players[x].shou + (players[x].shou > 0 ? 0.1 : -0.1)); addLog(`${players[x].name}受到的伤害值按照描述变化`); }
+    function simian(x, y) { if (players[x].hp >= players[y].hp) return; addLog(`${players[x].name}触发四面楚歌!`); players[y].shang *= (1 - Math.min(players[x].ttt[4]/100.0, 0.99)); players[x].shou *= 1 + Math.min(players[x].ttt[4]/100.0, 0.99); players[x].ttt[4] += 11; }
+    function chenhuo(x, y) { players[y].shou *= 2; addLog(`${players[y].name}受到的伤害值增加100%`); players[x].shou += players[y].shou * 0.7; }
+    function langxi(x, y) { if (players[x].hp <= players[y].hp * 2) return; lun++; addLog(`${players[x].name}发动狼袭！`); players[x].shou += 2; fd(1, x, y, 0, 0, 0); }
+    function pofu(x, y) { if (players[x].ttt[9] || players[x].hp >= players[y].hp) return; players[x].ttt[9] = 1; players[y].hp -= players[x].hp; players[x].hp = players[y].hp * 2; addLog(`${players[x].name}和${players[y].name}的兵力按技能调整`); }
+    function sujun(x) { players[x].hp += 100; players[x].wu += 0.1; players[x].zhi += 0.1; }
+    function qixi(x, y) { for (let i=0; i<3; i++) { if (players[x].ttt[10]) shou(y, x, 120, 1, 1); else { players[x].shang += 0.02; addLog(`${players[x].name}造成的伤害值增加2%`); } players[x].ttt[10] = !players[x].ttt[10]; } }
+    function lueduo(x, y) { if (players[x].ttt[11] > 2) return; players[x].ttt[11]++; addLog(`${players[x].name}发动掠夺！`); let ttt = Math.floor(Math.random() * players[y].ji.length); players[x].ji.push(players[y].ji[ttt]); players[y].ji.push(skillList[19]); }
+    function yuzhan(x, y) { shou(y, x, 100 + players[x].ttt[12], 1, 1); players[x].ttt[12] += 50; }
+
+    function fd(dfn, x, y, num, lei, pre) {
+        if (gameOver) return;
+        if (dfn !== 9) fd(9, x, y, num, lei, pre);
+        for (let skill of players[x].ji) {
+            if (skill.dfn === dfn) {
+                addLog(`${players[x].name} 发动 ${skill.name}`);
+                if (skill.name === "普攻") pugong(x, y);
+                else if (skill.name === "反击") fanji(x, y);
+                else if (skill.name === "乘胜追击") chengshengzhuiji(x, y, num, lei);
+                else if (skill.name === "铁骑横冲") tieqihengchong(x, y);
+                else if (skill.name === "草船借箭") caochuan(x, y);
+                else if (skill.name === "五雷轰顶") wulei(x, y);
+                else if (skill.name === "避其锐气") ruiqi(x, y);
+                else if (skill.name === "以战养战") yangzhan(x, y);
+                else if (skill.name === "文武双全") wenwu(x, y);
+                else if (skill.name === "破甲") pojia(x, y);
+                else if (skill.name === "重整旗鼓" && players[x].hp <= 5000) chongzheng(x, y);
+                else if (skill.name === "不屈" && players[x].hp <= 0) buqu(x, y);
+                else if (skill.name === "巧变") qiaobian(x, y);
+                else if (skill.name === "四面楚歌") simian(x, y);
+                else if (skill.name === "趁火打劫") chenhuo(x, y);
+                else if (skill.name === "狼袭") langxi(x, y);
+                else if (skill.name === "破釜沉舟") pofu(x, y);
+                else if (skill.name === "肃军") sujun(x);
+                else if (skill.name === "奇袭") qixi(x, y);
+                else if (skill.name === "掠夺") lueduo(x, y);
+                else if (skill.name === "愈战愈勇") yuzhan(x, y);
+            }
+        }
+    }
+
+    function execTurn() {
+        if (gameOver) return;
+        let x = turn;
+        let y = 1 - turn;
+
+        addLog(`---------- 回合 ${lun+1} · ${players[x].name} ----------`);
+        fd(8, y, x, 0, 0, 0);
+        fd(2, x, y, 0, 0, 0);
+        fd(1, x, y, 0, 0, 0);
+        fd(3, x, y, 0, 0, 0);
+        fd(6, x, y, 0, 0, 0);
+        fd(6, y, x, 0, 0, 0);
+        fd(7, y, x, 0, 0, 0);
+
+        if (players[0].hp <= 0 || players[1].hp <= 0) {
+            gameOver = true;
+            let winner = players[0].hp <= 0 ? players[1].name : players[0].name;
+            addLog(`🏆 游戏结束！胜利者：${winner} 🏆`);
+            document.getElementById('nextTurnBtn').disabled = true;
+        } else {
+            turn = 1 - turn;
+            lun++;
+        }
+        refreshUI();
+    }
+
+    function startGame() {
+        // 读取玩家输入
+        let p1Name = document.getElementById('p1Name').value.trim();
+        let p2Name = document.getElementById('p2Name').value.trim();
+        let p1SkillStr = document.getElementById('p1Skills').value.trim();
+        let p2SkillStr = document.getElementById('p2Skills').value.trim();
+
+        if (!p1Name) p1Name = "关羽";
+        if (!p2Name) p2Name = "吕布";
+
+        function parseSkills(str) {
+            if (!str) return [];
+            let parts = str.split(/\s+/).map(Number).filter(n => !isNaN(n) && n >= 1 && n <= 21);
+            return parts.map(id => skillList.find(s => s.id === id)).filter(s => s);
+        }
+
+        let p1Skills = parseSkills(p1SkillStr);
+        let p2Skills = parseSkills(p2SkillStr);
+
+        // 如果没有输入任何有效技能，给默认
+        if (p1Skills.length === 0) p1Skills = [skillList[0]];
+        if (p2Skills.length === 0) p2Skills = [skillList[0]];
+
+        // 确保每个玩家最多7个技能（C++原版是7个）
+        if (p1Skills.length > 7) p1Skills = p1Skills.slice(0, 7);
+        if (p2Skills.length > 7) p2Skills = p2Skills.slice(0, 7);
+
+        players = [
+            { hp: 15000, zhi: 10, wu: 10, shang: 1.0, shou: 1.0, name: p1Name, ji: p1Skills, ttt: Array(20).fill(0) },
+            { hp: 15000, zhi: 10, wu: 10, shang: 1.0, shou: 1.0, name: p2Name, ji: p2Skills, ttt: Array(20).fill(0) }
+        ];
+
+        turn = 0;
+        lun = 0;
+        gameOver = false;
+        logEntries = ["⚔️ 游戏开始！"];
+
+        document.getElementById('setupPanel').style.display = 'none';
+        document.getElementById('battlePanel').style.display = 'block';
+        document.getElementById('nextTurnBtn').disabled = false;
+        
+        refreshUI();
+        addLog(`👑 ${p1Name} 技能：${p1Skills.map(s=>s.name).join('、')}`);
+        addLog(`⚔️ ${p2Name} 技能：${p2Skills.map(s=>s.name).join('、')}`);
+    }
+
+    function resetGame() {
+        document.getElementById('setupPanel').style.display = 'block';
+        document.getElementById('battlePanel').style.display = 'none';
+    }
+
+    // 绑定事件
+    document.getElementById('startGameBtn').addEventListener('click', startGame);
+    document.getElementById('nextTurnBtn').addEventListener('click', execTurn);
+    document.getElementById('resetBtn').addEventListener('click', resetGame);
+})();
+</script>
+</body>
+</html>
